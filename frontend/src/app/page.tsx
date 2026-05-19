@@ -26,6 +26,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
+const BACKEND_URL = "https://ai-email-automation-qfyq.onrender.com";
+
 export default function Home() {
   const [emails, setEmails] = useState<any[]>([]);
   const { theme, setTheme } = useTheme();
@@ -39,14 +41,14 @@ export default function Home() {
   const [open, setOpen] = useState(false);
 
   const loginWithGoogle = () => {
-    window.location.href = "http://localhost:8000/auth/google/login";
+    window.location.href = `${BACKEND_URL}/auth/google/login`;
   };
 
   const fetchEmails = async () => {
     setLoading(true);
 
     try {
-      const res = await fetch("http://localhost:8000/emails");
+      const res = await fetch(`${BACKEND_URL}/emails`);
       const data = await res.json();
 
       if (Array.isArray(data)) {
@@ -62,15 +64,12 @@ export default function Home() {
     setLoading(false);
   };
 
-  const generateReply = async (
-    subject: string,
-    sender: string
-  ) => {
+  const generateReply = async (subject: string, sender: string) => {
     setLoading(true);
 
     try {
       const res = await fetch(
-        `http://localhost:8000/generate-reply?subject=${encodeURIComponent(subject)}&sender=${encodeURIComponent(sender)}`
+        `${BACKEND_URL}/generate-reply?subject=${encodeURIComponent(subject)}&sender=${encodeURIComponent(sender)}`
       );
 
       const data = await res.json();
@@ -81,7 +80,7 @@ export default function Home() {
         setReplyFrom(data.from);
         setOpen(true);
       } else {
-        toast.error(data.error);
+        toast.error(data.error || "Reply generation failed");
       }
     } catch {
       toast.error("Reply generation failed");
@@ -95,7 +94,7 @@ export default function Home() {
 
     try {
       const res = await fetch(
-        `http://localhost:8000/create-draft?subject=${encodeURIComponent(replySubject)}&sender=${encodeURIComponent(replyFrom)}&reply=${encodeURIComponent(replyPreview)}`
+        `${BACKEND_URL}/create-draft?subject=${encodeURIComponent(replySubject)}&sender=${encodeURIComponent(replyFrom)}&reply=${encodeURIComponent(replyPreview)}`
       );
 
       const data = await res.json();
@@ -104,7 +103,7 @@ export default function Home() {
         toast.success("Draft created successfully");
         setOpen(false);
       } else {
-        toast.error(data.error);
+        toast.error(data.error || "Draft creation failed");
       }
     } catch {
       toast.error("Draft creation failed");
@@ -118,15 +117,18 @@ export default function Home() {
       email.subject.toLowerCase().includes(search.toLowerCase()) ||
       email.from.toLowerCase().includes(search.toLowerCase());
 
-    const matchesFilter =
-      filter === "ALL" || email.category === filter;
+    const matchesFilter = filter === "ALL" || email.category === filter;
 
     return matchesSearch && matchesFilter;
   });
 
   const urgentCount = emails.filter((e) => e.category === "URGENT").length;
-  const importantCount = emails.filter((e) => e.category === "IMPORTANT").length;
-  const unwantedCount = emails.filter((e) => e.category === "UNWANTED").length;
+  const importantCount = emails.filter(
+    (e) => e.category === "IMPORTANT"
+  ).length;
+  const unwantedCount = emails.filter(
+    (e) => e.category === "UNWANTED"
+  ).length;
 
   const chartData = [
     { name: "Urgent", value: urgentCount },
@@ -168,9 +170,7 @@ export default function Home() {
           </h1>
 
           <button
-            onClick={() =>
-              setTheme(theme === "dark" ? "light" : "dark")
-            }
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
             className="bg-white dark:bg-gray-800 dark:text-white p-3 rounded-lg shadow"
           >
             {theme === "dark" ? <Sun /> : <Moon />}
@@ -282,18 +282,14 @@ export default function Home() {
               key={index}
               className="bg-white dark:bg-gray-900 dark:text-white shadow-lg rounded-xl p-6"
             >
-              <h2 className="text-xl font-bold mb-3">
-                {email.subject}
-              </h2>
+              <h2 className="text-xl font-bold mb-3">{email.subject}</h2>
 
               <p className="mb-3">From: {email.from}</p>
 
               <p className="font-bold mb-4">{email.category}</p>
 
               <button
-                onClick={() =>
-                  generateReply(email.subject, email.from)
-                }
+                onClick={() => generateReply(email.subject, email.from)}
                 className="bg-orange-600 text-white px-4 py-2 rounded-lg"
               >
                 Generate Reply
@@ -323,9 +319,7 @@ export default function Home() {
               <textarea
                 className="w-full border rounded-lg p-4 h-64 bg-transparent"
                 value={replyPreview}
-                onChange={(e) =>
-                  setReplyPreview(e.target.value)
-                }
+                onChange={(e) => setReplyPreview(e.target.value)}
               />
 
               <button
