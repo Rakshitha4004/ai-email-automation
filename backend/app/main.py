@@ -56,13 +56,16 @@ def get_emails():
     classified_emails = []
 
     for email in emails:
-        category = classify_email(email["subject"])
+        category = classify_email(
+        email["subject"],
+        email["from"]
+    )
 
-        classified_emails.append({
-            "subject": email["subject"],
-            "from": email["from"],
-            "category": category
-        })
+    classified_emails.append({
+        "subject": email["subject"],
+        "from": email["from"],
+        "category": category
+    })
 
     return classified_emails
 
