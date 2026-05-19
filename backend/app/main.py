@@ -5,7 +5,7 @@ from fastapi import Request
 
 from app.auth.google_auth import create_flow
 from app.auth.token_store import save_credentials, load_credentials
-from app.services.gmail_service import fetch_emails, create_gmail_draft
+from app.services.gmail_service import fetch_emails, create_draft
 from app.services.ai_service import classify_email, generate_reply
 
 app = FastAPI()
@@ -85,6 +85,6 @@ def create_draft(subject: str, sender: str, reply: str):
     if not creds:
         return {"error": "Please login first"}
 
-    create_gmail_draft(creds, sender, subject, reply)
+  create_draft(creds, sender, subject, reply)
 
     return {"message": "Draft created successfully"}
