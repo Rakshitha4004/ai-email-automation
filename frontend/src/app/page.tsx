@@ -148,16 +148,49 @@ export default function Dashboard() {
         darkMode ? "bg-black text-white" : "bg-white text-black"
       }`}
     >
+      {/* Sidebar */}
       <div className="w-64 p-6 border-r border-gray-800">
         <h1 className="text-4xl font-bold mb-12">AI Mail</h1>
 
-        <div className="space-y-8 text-2xl">
-          <div>📥 Inbox</div>
-          <div>📝 Drafts</div>
-          <div>📊 Analytics</div>
+        <div className="space-y-6 text-2xl">
+          <button
+            onClick={() =>
+              document
+                .getElementById("emails-section")
+                ?.scrollIntoView({ behavior: "smooth" })
+            }
+            className="flex items-center gap-3 hover:text-blue-400 transition"
+          >
+            📥 Inbox
+          </button>
+
+          <button
+            onClick={() => {
+              if (selectedEmail) {
+                setReplyModal(true);
+              } else {
+                alert("Generate AI reply first.");
+              }
+            }}
+            className="flex items-center gap-3 hover:text-green-400 transition"
+          >
+            📝 Drafts
+          </button>
+
+          <button
+            onClick={() =>
+              document
+                .getElementById("analytics-section")
+                ?.scrollIntoView({ behavior: "smooth" })
+            }
+            className="flex items-center gap-3 hover:text-yellow-400 transition"
+          >
+            📊 Analytics
+          </button>
         </div>
       </div>
 
+      {/* Main */}
       <div className="flex-1 p-8">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-6xl font-bold">AI Email Dashboard</h1>
@@ -185,27 +218,20 @@ export default function Dashboard() {
             {loading ? "Loading..." : "Fetch Emails"}
           </button>
         </div>
-                <div className="flex gap-4 mb-8">
+
+        <div className="flex gap-4 mb-8">
           <input
             type="text"
             placeholder="Search emails..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className={`flex-1 p-4 rounded-xl border ${
-              darkMode
-                ? "bg-gray-900 border-gray-700 text-white"
-                : "bg-gray-100 border-gray-300 text-black"
-            }`}
+            className="flex-1 p-4 rounded-xl bg-gray-900 border border-gray-700 text-white"
           />
 
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
-            className={`p-4 rounded-xl border ${
-              darkMode
-                ? "bg-gray-900 border-gray-700 text-white"
-                : "bg-gray-100 border-gray-300 text-black"
-            }`}
+            className="p-4 rounded-xl bg-gray-900 border border-gray-700 text-white"
           >
             <option value="ALL">All</option>
             <option value="URGENT">Urgent</option>
@@ -236,18 +262,16 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-8 mb-8">
+        <div
+          id="analytics-section"
+          className="grid grid-cols-2 gap-8 mb-8"
+        >
           <div className="bg-slate-950 rounded-2xl p-6 h-[450px]">
             <h2 className="text-3xl font-bold mb-6">Email Distribution</h2>
 
             <ResponsiveContainer width="100%" height="85%">
               <PieChart>
-                <Pie
-                  data={pieData}
-                  dataKey="value"
-                  outerRadius={140}
-                  label
-                >
+                <Pie data={pieData} dataKey="value" outerRadius={140} label>
                   {pieData.map((_, index) => (
                     <Cell
                       key={index}
@@ -276,7 +300,10 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="bg-slate-950 rounded-2xl p-6">
+        <div
+          id="emails-section"
+          className="bg-slate-950 rounded-2xl p-6"
+        >
           <h2 className="text-3xl font-bold mb-6">Emails</h2>
 
           <div className="space-y-4 max-h-[500px] overflow-y-auto">
@@ -313,11 +340,6 @@ export default function Dashboard() {
             <div className="bg-slate-900 w-[700px] rounded-2xl p-8">
               <h2 className="text-3xl font-bold mb-6">AI Generated Reply</h2>
 
-              <div className="mb-4">
-                <p className="text-gray-400">Subject:</p>
-                <p className="text-lg">{selectedEmail.subject}</p>
-              </div>
-
               <textarea
                 value={aiReply}
                 onChange={(e) => setAiReply(e.target.value)}
@@ -328,14 +350,14 @@ export default function Dashboard() {
               <div className="flex gap-4 mt-6">
                 <button
                   onClick={createDraft}
-                  className="bg-green-600 px-6 py-3 rounded-xl text-lg font-semibold"
+                  className="bg-green-600 px-6 py-3 rounded-xl"
                 >
                   Create Gmail Draft
                 </button>
 
                 <button
                   onClick={() => setReplyModal(false)}
-                  className="bg-red-600 px-6 py-3 rounded-xl text-lg font-semibold"
+                  className="bg-red-600 px-6 py-3 rounded-xl"
                 >
                   Close
                 </button>
