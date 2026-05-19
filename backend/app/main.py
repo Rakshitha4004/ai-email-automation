@@ -1,138 +1,94 @@
-from fastapi import FastAPI, Request, Query
-from fastapi.responses import RedirectResponse
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.auth.google_auth import create_flow
-from app.services.gmail_service import fetch_emails, create_draft
+from app.auth.token_store import save_credentials, load_credentials
+from app.services.gmail_service import fetch_emails, create_gmail_draft
 from app.services.ai_service import classify_email, generate_reply
+
+from google_auth_oauthlib.flow import Flow
+from googleapiclient.discovery import build
 
 app = FastAPI()
 
+# CORS FIX
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[
+        "https://ai-email-automation-rust.vercel.app",
+        "http://localhost:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-saved_credentials = None
-saved_flow = None
-
-
 @app.get("/")
 def home():
-    return {"message": "AI Email Automation Backend Running"}
-
+    return {"message": "AI Email Automation API Running"}
 
 @app.get("/auth/google/login")
-def google_login():
-    global saved_flow
+def login():
+    flow = create_flow()
 
-    saved_flow = create_flow()
+    authorization_url, state = flow.authorization_url(
+        access_type="offline",
+        include_granted_scopes="true"
+    )
 
-    auth_url, _ = saved_flow.authorization_url(prompt="consent")
-
-    return RedirectResponse(auth_url)
-
+    return {"auth_url": authorization_url}
 
 @app.get("/auth/google/callback")
-def google_callback(request: Request):
-    global saved_credentials
-    global saved_flow
+def callback(code: str):
+    flow = create_flow()
 
-    try:
-        if saved_flow is None:
-            return {"error": "Login flow not initialized"}
+    flow.fetch_token(code=code)
 
-        saved_flow.fetch_token(
-            authorization_response=str(request.url)
-        )
+    credentials = flow.credentials
 
-        saved_credentials = saved_flow.credentials
+    save_credentials(credentials)
 
-        return {"message": "Google login successful"}
-
-    except Exception as e:
-        return {"callback_error": str(e)}
-
+    return {"message": "Login successful"}
 
 @app.get("/emails")
 def get_emails():
-    global saved_credentials
+    creds = load_credentials()
 
-    try:
-        if saved_credentials is None:
-            return {"error": "Please login first"}
+    if not creds:
+        return {"error": "Please login first"}
 
-        emails = fetch_emails(saved_credentials)
+    emails = fetch_emails(creds)
 
-        classified_emails = []
+    classified_emails = []
 
-        for email in emails:
-            category = classify_email(
-                email.get("subject", "No Subject"),
-                email.get("from", "Unknown Sender")
-            )
+    for email in emails:
+        category = classify_email(email["subject"])
 
-            classified_emails.append({
-                "subject": email.get("subject", "No Subject"),
-                "from": email.get("from", "Unknown Sender"),
-                "category": category
-            })
+        classified_emails.append({
+            "subject": email["subject"],
+            "from": email["from"],
+            "category": category
+        })
 
-        return classified_emails
-
-    except Exception as e:
-        return {"error": str(e)}
-
+    return classified_emails
 
 @app.get("/generate-reply")
-def generate_email_reply(
-    subject: str = Query(...),
-    sender: str = Query(...)
-):
-    global saved_credentials
+def generate_ai_reply(subject: str, sender: str):
+    reply = generate_reply(subject, sender)
 
-    try:
-        if saved_credentials is None:
-            return {"error": "Please login first"}
-
-        reply_body = generate_reply(subject, sender)
-
-        return {
-            "subject": subject,
-            "from": sender,
-            "reply": reply_body
-        }
-
-    except Exception as e:
-        return {"error": str(e)}
-
+    return {
+        "subject": subject,
+        "from": sender,
+        "reply": reply
+    }
 
 @app.get("/create-draft")
-def create_email_draft(
-    subject: str = Query(...),
-    sender: str = Query(...),
-    reply: str = Query(...)
-):
-    global saved_credentials
+def create_draft(subject: str, sender: str, reply: str):
+    creds = load_credentials()
 
-    try:
-        if saved_credentials is None:
-            return {"error": "Please login first"}
+    if not creds:
+        return {"error": "Please login first"}
 
-        draft = create_draft(
-            saved_credentials,
-            sender,
-            subject,
-            reply
-        )
+    create_gmail_draft(creds, sender, subject, reply)
 
-        return {
-            "message": "Draft created successfully",
-            "draft_id": draft["id"]
-        }
-
-    except Exception as e:
-        return {"error": str(e)}
+    return {"message": "Draft created successfully"}
