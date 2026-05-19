@@ -1,6 +1,5 @@
 import os
 import pickle
-from google.oauth2.credentials import Credentials
 
 TOKEN_FILE = "token.pickle"
 

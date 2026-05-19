@@ -14,15 +14,13 @@ SCOPES = [
 def create_flow():
     credentials_json = os.getenv("GOOGLE_CREDENTIALS_JSON")
 
-    if not credentials_json:
-        raise Exception("GOOGLE_CREDENTIALS_JSON not found")
-
     client_config = json.loads(credentials_json)
 
     flow = Flow.from_client_config(
-        client_config,
+        client_config=client_config,
         scopes=SCOPES,
-        redirect_uri=REDIRECT_URI
+        redirect_uri=REDIRECT_URI,
+        autogenerate_code_verifier=False
     )
 
     return flow
