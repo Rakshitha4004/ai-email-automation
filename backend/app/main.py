@@ -25,12 +25,11 @@ def home():
 def google_login():
     flow = create_flow()
 
-    authorization_url, state = flow.authorization_url(
-        access_type="offline",
-        include_granted_scopes="true",
-        prompt="consent"
-    )
-
+   authorization_url, state = flow.authorization_url(
+    access_type="offline",
+    include_granted_scopes="true",
+    prompt="consent"
+)
     return RedirectResponse(authorization_url)
 
     return RedirectResponse(authorization_url)
