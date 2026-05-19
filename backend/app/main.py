@@ -1,154 +1,89 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse, JSONResponse
-from starlette.middleware.sessions import SessionMiddleware
-import os
+from fastapi.responses import RedirectResponse
 
 from app.auth.google_auth import create_flow
-from app.services.gmail_service import get_gmail_service, fetch_emails, create_draft
+from app.auth.token_store import save_credentials, load_credentials
+from app.services.gmail_service import fetch_emails, create_gmail_draft
 from app.services.ai_service import classify_email, generate_reply
 
 app = FastAPI()
 
-# SESSION MIDDLEWARE (FIXED)
-app.add_middleware(
-    SessionMiddleware,
-    secret_key=os.getenv("SECRET_KEY", "super-secret-key-123"),
-    same_site="none",
-    https_only=True,
-    max_age=86400,
-)
-
-# CORS (FIXED)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://ai-email-automation-rust.vercel.app",
-        "https://ai-email-automation-8wpl69j64-rakshitha-s-projects3.vercel.app",
-        "http://localhost:3000",
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 @app.get("/")
-def root():
+def home():
     return {"message": "Backend running"}
 
-# GOOGLE LOGIN
 @app.get("/auth/google/login")
-def login(request: Request):
+def google_login():
     flow = create_flow()
 
-   authorization_url, state = flow.authorization_url(
-    access_type="offline",
-    include_granted_scopes="true",
-    prompt="consent",
-    code_challenge_method=None
-)
-
-    request.session["state"] = state
+    authorization_url, state = flow.authorization_url(
+        access_type="offline",
+        include_granted_scopes="true",
+        prompt="consent"
+    )
 
     return RedirectResponse(authorization_url)
 
-# GOOGLE CALLBACK
 @app.get("/auth/google/callback")
-def callback(request: Request):
+def google_callback(code: str):
     flow = create_flow()
 
-    flow.fetch_token(authorization_response=str(request.url))
+    flow.fetch_token(code=code)
 
     credentials = flow.credentials
 
-    request.session["credentials"] = {
-        "token": credentials.token,
-        "refresh_token": credentials.refresh_token,
-        "token_uri": credentials.token_uri,
-        "client_id": credentials.client_id,
-        "client_secret": credentials.client_secret,
-        "scopes": credentials.scopes,
-    }
+    save_credentials(credentials)
 
     return RedirectResponse("https://ai-email-automation-rust.vercel.app")
 
-# FETCH EMAILS
 @app.get("/emails")
-def emails(request: Request):
-    creds = request.session.get("credentials")
+def get_emails():
+    creds = load_credentials()
 
     if not creds:
-        return JSONResponse(
-            {"error": "Not authenticated. Please login first."},
-            status_code=401,
-        )
+        return {"error": "Please login first"}
 
-    try:
-        service = get_gmail_service(creds)
-        messages = fetch_emails(service)
+    emails = fetch_emails(creds)
 
-        classified = []
+    classified_emails = []
 
-        for msg in messages:
-            category = classify_email(msg["subject"], msg["from"])
+    for email in emails:
+        category = classify_email(email["subject"])
 
-            classified.append({
-                "subject": msg["subject"],
-                "from": msg["from"],
-                "category": category,
-            })
+        classified_emails.append({
+            "subject": email["subject"],
+            "from": email["from"],
+            "category": category
+        })
 
-        return classified
+    return classified_emails
 
-    except Exception as e:
-        return JSONResponse(
-            {"error": str(e)},
-            status_code=500,
-        )
-
-# GENERATE AI REPLY
 @app.get("/generate-reply")
-def reply(subject: str, sender: str):
-    try:
-        reply_text = generate_reply(subject, sender)
+def generate_ai_reply(subject: str, sender: str):
+    reply = generate_reply(subject, sender)
 
-        return {
-            "reply": reply_text,
-            "subject": subject,
-            "from": sender,
-        }
+    return {
+        "subject": subject,
+        "from": sender,
+        "reply": reply
+    }
 
-    except Exception as e:
-        return JSONResponse(
-            {"error": str(e)},
-            status_code=500,
-        )
-
-# CREATE DRAFT
 @app.get("/create-draft")
-def draft(request: Request, subject: str, sender: str, reply: str):
-    creds = request.session.get("credentials")
+def create_draft(subject: str, sender: str, reply: str):
+    creds = load_credentials()
 
     if not creds:
-        return JSONResponse(
-            {"error": "Not authenticated. Please login first."},
-            status_code=401,
-        )
+        return {"error": "Please login first"}
 
-    try:
-        service = get_gmail_service(creds)
+    create_gmail_draft(creds, sender, subject, reply)
 
-        create_draft(
-            service=service,
-            to=sender,
-            subject=f"Re: {subject}",
-            body=reply,
-        )
-
-        return {"message": "Draft created successfully"}
-
-    except Exception as e:
-        return JSONResponse(
-            {"error": str(e)},
-            status_code=500,
-        )
+    return {"message": "Draft created successfully"}

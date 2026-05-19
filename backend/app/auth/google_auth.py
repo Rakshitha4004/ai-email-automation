@@ -22,7 +22,7 @@ def create_flow():
     flow = Flow.from_client_config(
         client_config,
         scopes=SCOPES,
-        redirect_uri=REDIRECT_URI,
+        redirect_uri=REDIRECT_URI
     )
 
     return flow
