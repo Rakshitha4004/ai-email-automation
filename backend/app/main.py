@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
-from fastapi import Request
 
 from app.auth.google_auth import create_flow
 from app.auth.token_store import save_credentials, load_credentials
@@ -38,7 +37,6 @@ def google_login():
 @app.get("/auth/google/callback")
 def google_callback(code: str):
     flow = create_flow()
-
     flow.fetch_token(code=code)
 
     credentials = flow.credentials
@@ -79,12 +77,12 @@ def generate_ai_reply(subject: str, sender: str):
     }
 
 @app.get("/create-draft")
-def create_draft(subject: str, sender: str, reply: str):
+def create_email_draft(subject: str, sender: str, reply: str):
     creds = load_credentials()
 
     if not creds:
         return {"error": "Please login first"}
 
-  create_draft(creds, sender, subject, reply)
+    create_draft(creds, sender, subject, reply)
 
     return {"message": "Draft created successfully"}
