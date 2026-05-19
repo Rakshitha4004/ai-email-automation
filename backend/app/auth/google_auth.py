@@ -1,10 +1,9 @@
 import os
 import json
-
-os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
-
 from google_auth_oauthlib.flow import Flow
 from app.config import REDIRECT_URI
+
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 SCOPES = [
     "https://www.googleapis.com/auth/gmail.readonly",
