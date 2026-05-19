@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
+from fastapi import Request
 
 from app.auth.google_auth import create_flow
 from app.auth.token_store import save_credentials, load_credentials
@@ -11,7 +12,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://ai-email-automation-rust.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -28,7 +29,8 @@ def google_login():
     authorization_url, state = flow.authorization_url(
         access_type="offline",
         include_granted_scopes="true",
-        prompt="consent"
+        prompt="consent",
+        code_challenge_method=None
     )
 
     return RedirectResponse(authorization_url)
@@ -40,7 +42,6 @@ def google_callback(code: str):
     flow.fetch_token(code=code)
 
     credentials = flow.credentials
-
     save_credentials(credentials)
 
     return RedirectResponse("https://ai-email-automation-rust.vercel.app")
