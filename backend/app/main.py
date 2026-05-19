@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
 
 from app.auth.google_auth import create_flow
 from app.auth.token_store import save_credentials, load_credentials
@@ -8,7 +9,7 @@ from app.services.ai_service import classify_email, generate_reply
 
 app = FastAPI()
 
-# CORS FIX
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,6 +17,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 @app.get("/")
 def home():
@@ -28,10 +30,11 @@ def google_login():
 
     authorization_url, state = flow.authorization_url(
         access_type="offline",
-        include_granted_scopes="true"
+        include_granted_scopes="true",
+        prompt="consent"
     )
 
-    return {"auth_url": authorization_url}
+    return RedirectResponse(authorization_url)
 
 
 @app.get("/auth/google/callback")
@@ -44,7 +47,9 @@ def google_callback(code: str):
 
     save_credentials(credentials)
 
-    return {"message": "Google login successful"}
+    return RedirectResponse(
+        "https://ai-email-automation-5dyyceqr5-rakshitha-s-projects3.vercel.app/"
+    )
 
 
 @app.get("/emails")
