@@ -41,11 +41,12 @@ def root():
 def login(request: Request):
     flow = create_flow()
 
-    authorization_url, state = flow.authorization_url(
-        access_type="offline",
-        include_granted_scopes="true",
-        prompt="consent",
-    )
+   authorization_url, state = flow.authorization_url(
+    access_type="offline",
+    include_granted_scopes="true",
+    prompt="consent",
+    code_challenge_method=None
+)
 
     request.session["state"] = state
 

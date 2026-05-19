@@ -3,8 +3,6 @@ import json
 from google_auth_oauthlib.flow import Flow
 from app.config import REDIRECT_URI
 
-os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
-
 SCOPES = [
     "https://www.googleapis.com/auth/gmail.readonly",
     "https://www.googleapis.com/auth/gmail.compose",
@@ -12,7 +10,6 @@ SCOPES = [
     "https://www.googleapis.com/auth/userinfo.email",
     "https://www.googleapis.com/auth/userinfo.profile"
 ]
-
 
 def create_flow():
     credentials_json = os.getenv("GOOGLE_CREDENTIALS_JSON")
@@ -25,7 +22,7 @@ def create_flow():
     flow = Flow.from_client_config(
         client_config,
         scopes=SCOPES,
-        redirect_uri=REDIRECT_URI
+        redirect_uri=REDIRECT_URI,
     )
 
     return flow
