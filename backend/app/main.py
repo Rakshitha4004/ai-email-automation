@@ -26,12 +26,13 @@ def home():
 def google_login():
     flow = create_flow()
 
-authorization_url, state = flow.authorization_url(
-    access_type="offline",
-    include_granted_scopes="true",
-    prompt="consent",
-    code_challenge_method=None
-)
+    authorization_url, state = flow.authorization_url(
+        access_type="offline",
+        include_granted_scopes="true",
+        prompt="consent",
+        code_challenge_method=None
+    )
+
     return RedirectResponse(authorization_url)
 
 @app.get("/auth/google/callback")
